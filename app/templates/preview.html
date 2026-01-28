@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} | Nature Format Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body class="preview">
+    <header class="masthead">
+      <div>
+        <p class="kicker">Nature Research</p>
+        <h1>{{ title }}</h1>
+        <p class="byline">Prepared with Nature Format Studio</p>
+      </div>
+      {% if not render_only %}
+        <div class="actions">
+          <a class="button" href="{{ url_for('download', paper_id=paper_id) }}">Download PDF</a>
+          <a class="button ghost" href="{{ url_for('index') }}">Start over</a>
+        </div>
+      {% endif %}
+    </header>
+
+    <main class="article">
+      <section class="abstract">
+        <h2>Abstract</h2>
+        <p>{{ abstract }}</p>
+      </section>
+
+      <section class="body">
+        {% for paragraph in body_sections %}
+          <p>{{ paragraph }}</p>
+        {% endfor %}
+      </section>
+
+      <aside class="figures">
+        <h2>Figures</h2>
+        {% if figures %}
+          <div class="figure-grid">
+            {% for figure in figures %}
+              <figure>
+                {% if figure.data_uri %}
+                  <img src="{{ figure.data_uri }}" alt="{{ figure.caption }}" />
+                {% else %}
+                  <div class="figure-placeholder">{{ figure.filename }}</div>
+                {% endif %}
+                <figcaption>{{ figure.caption }}</figcaption>
+              </figure>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">No figures were detected in the PowerPoint deck.</p>
+        {% endif %}
+      </aside>
+    </main>
+  </body>
+</html>

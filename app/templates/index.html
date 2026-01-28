@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nature Format Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="kicker">Nature Format Studio</p>
+        <h1>Turn your manuscript and figures into a Nature-style layout.</h1>
+        <p>
+          Upload a DOCX manuscript and a PowerPoint figure deck. We'll parse the
+          content, arrange it in a Nature-inspired web view, and generate a PDF
+          you can download.
+        </p>
+      </section>
+
+      <section class="card">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="alert" role="alert">
+              {% for message in messages %}
+                <p>{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        <form class="form" action="{{ url_for('format_manuscript') }}" method="post" enctype="multipart/form-data">
+          <label class="field">
+            <span>Manuscript (.docx)</span>
+            <input type="file" name="manuscript" accept=".docx" required />
+          </label>
+          <label class="field">
+            <span>Figures deck (.pptx)</span>
+            <input type="file" name="figures" accept=".pptx" required />
+          </label>
+          <button class="button" type="submit">Format like Nature</button>
+        </form>
+      </section>
+
+      <section class="card notes">
+        <h2>What this tool does</h2>
+        <ul>
+          <li>Pulls title, abstract, and body paragraphs from your DOCX file.</li>
+          <li>Extracts images from your PowerPoint figure deck.</li>
+          <li>Builds a Nature-inspired layout for the web and a PDF export.</li>
+        </ul>
+        <p class="fine-print">
+          Use this as a starting point for layout. You can refine section names
+          and citations after export.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

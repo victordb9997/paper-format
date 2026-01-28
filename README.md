@@ -22,12 +22,24 @@ Then visit http://localhost:5000, upload your manuscript and figure deck, and do
 
 ## Troubleshooting (Windows)
 
-If you previously installed WeasyPrint and see errors about missing `gobject-2.0-0` or GTK, delete the old virtual environment and reinstall dependencies:
+If you previously installed WeasyPrint and see errors about missing `gobject-2.0-0` or GTK, you are still running an old virtual environment. Delete it and recreate a clean one before running the app.
 
-```bash
+**PowerShell**
+
+```powershell
 deactivate
-rm -rf .venv
+Remove-Item -Recurse -Force .venv
 python -m venv .venv
-source .venv/bin/activate
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+**Command Prompt (cmd.exe)**
+
+```bat
+deactivate
+rmdir /s /q .venv
+python -m venv .venv
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```

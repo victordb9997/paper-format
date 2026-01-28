@@ -17,5 +17,4 @@ Then visit http://localhost:5000, upload your manuscript and figure deck, and do
 
 - The manuscript parser uses the first paragraph as the title and the second paragraph as the abstract.
 - Figures are pulled from images embedded in the PowerPoint slides.
-- The PDF export uses ReportLab and does not require system GTK dependencies.
 - Customize the layout by editing `app/static/styles.css` and `app/templates/preview.html`.

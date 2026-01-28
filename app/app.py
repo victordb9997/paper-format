@@ -25,8 +25,14 @@ ALLOWED_DOCX = {".docx"}
 ALLOWED_PPTX = {".pptx"}
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 150 * 1024 * 1024
 app.secret_key = os.environ.get("SECRET_KEY", "dev")
+
+
+@app.errorhandler(413)
+def request_entity_too_large(error: Exception) -> Response:
+    flash("Upload too large. Please compress your PPTX/DOCX or reduce image sizes and try again.")
+    return redirect(url_for("index"))
 
 
 @dataclass

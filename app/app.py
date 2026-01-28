@@ -14,7 +14,11 @@ from werkzeug.utils import secure_filename
 
 from docx import Document
 from pptx import Presentation
-from weasyprint import HTML
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfgen import canvas
 
 
 ALLOWED_DOCX = {".docx"}
@@ -87,9 +91,151 @@ def _render_html(title: str, abstract: str, body_sections: List[str], figures: L
     )
 
 
-def _create_pdf(rendered_html: str, base_url: str) -> bytes:
-    pdf = HTML(string=rendered_html, base_url=base_url).write_pdf()
-    return pdf
+def _split_text(text: str, max_width: float, font_name: str, font_size: int) -> List[str]:
+    words = text.split()
+    if not words:
+        return [""]
+    lines: List[str] = []
+    current = words[0]
+    for word in words[1:]:
+        test_line = f"{current} {word}"
+        if pdfmetrics.stringWidth(test_line, font_name, font_size) <= max_width:
+            current = test_line
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _draw_paragraph(
+    pdf: canvas.Canvas,
+    text: str,
+    x: float,
+    y: float,
+    max_width: float,
+    font_name: str,
+    font_size: int,
+    leading: int,
+) -> float:
+    pdf.setFont(font_name, font_size)
+    for line in _split_text(text, max_width, font_name, font_size):
+        if y < inch:
+            pdf.showPage()
+            y = letter[1] - inch
+            pdf.setFont(font_name, font_size)
+        pdf.drawString(x, y, line)
+        y -= leading
+    return y
+
+
+def _create_pdf(title: str, abstract: str, body_sections: List[str], figures: List[FigureAsset]) -> bytes:
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    margin = inch
+    current_y = height - margin
+
+    pdf.setTitle(title or "Manuscript")
+
+    current_y = _draw_paragraph(
+        pdf,
+        title or "Untitled Manuscript",
+        margin,
+        current_y,
+        width - 2 * margin,
+        "Helvetica-Bold",
+        18,
+        22,
+    )
+    current_y -= 10
+
+    current_y = _draw_paragraph(
+        pdf,
+        "Abstract",
+        margin,
+        current_y,
+        width - 2 * margin,
+        "Helvetica-Bold",
+        12,
+        16,
+    )
+    current_y = _draw_paragraph(
+        pdf,
+        abstract,
+        margin,
+        current_y,
+        width - 2 * margin,
+        "Helvetica",
+        11,
+        15,
+    )
+    current_y -= 12
+
+    for paragraph in body_sections:
+        current_y = _draw_paragraph(
+            pdf,
+            paragraph,
+            margin,
+            current_y,
+            width - 2 * margin,
+            "Helvetica",
+            11,
+            15,
+        )
+        current_y -= 8
+
+    if figures:
+        current_y = _draw_paragraph(
+            pdf,
+            "Figures",
+            margin,
+            current_y,
+            width - 2 * margin,
+            "Helvetica-Bold",
+            12,
+            16,
+        )
+        for figure in figures:
+            if current_y < 2 * inch:
+                pdf.showPage()
+                current_y = height - margin
+            if figure.data_uri.startswith("data:image/"):
+                header, encoded = figure.data_uri.split(",", 1)
+                image_bytes = base64.b64decode(encoded)
+                image = ImageReader(io.BytesIO(image_bytes))
+                image_width, image_height = image.getSize()
+                max_width = width - 2 * margin
+                max_height = 3.25 * inch
+                scale = min(max_width / image_width, max_height / image_height, 1.0)
+                draw_width = image_width * scale
+                draw_height = image_height * scale
+                pdf.drawImage(
+                    image,
+                    margin,
+                    current_y - draw_height,
+                    width=draw_width,
+                    height=draw_height,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+                current_y -= draw_height + 8
+            current_y = _draw_paragraph(
+                pdf,
+                figure.caption,
+                margin,
+                current_y,
+                width - 2 * margin,
+                "Helvetica-Oblique",
+                9,
+                12,
+            )
+            current_y -= 10
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return buffer.read()
 
 
 @app.route("/", methods=["GET"])
@@ -124,7 +270,7 @@ def format_manuscript() -> Response:
         figures = _extract_figures(pptx_path)
 
         rendered_html = _render_html(title, abstract, body_sections, figures)
-        pdf_bytes = _create_pdf(rendered_html, base_url=str(Path(__file__).parent))
+        pdf_bytes = _create_pdf(title, abstract, body_sections, figures)
 
     paper_id = uuid.uuid4().hex
     STORE[paper_id] = FormattedPaper(

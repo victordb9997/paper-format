@@ -17,4 +17,17 @@ Then visit http://localhost:5000, upload your manuscript and figure deck, and do
 
 - The manuscript parser uses the first paragraph as the title and the second paragraph as the abstract.
 - Figures are pulled from images embedded in the PowerPoint slides.
+- The PDF export uses ReportLab and does not require system GTK dependencies.
 - Customize the layout by editing `app/static/styles.css` and `app/templates/preview.html`.
+
+## Troubleshooting (Windows)
+
+If you previously installed WeasyPrint and see errors about missing `gobject-2.0-0` or GTK, delete the old virtual environment and reinstall dependencies:
+
+```bash
+deactivate
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
